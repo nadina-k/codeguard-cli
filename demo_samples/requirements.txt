@@ -1,0 +1,4 @@
+flask
+Django==2.2
+PyYAML==5.1
+requests>=2.10

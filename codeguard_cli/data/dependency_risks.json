@@ -1,0 +1,34 @@
+{
+  "packages": {
+    "django": {
+      "severity": "High",
+      "affected": "<3.2",
+      "summary": "Older Django releases include multiple security advisories.",
+      "recommended": ">=3.2"
+    },
+    "pyyaml": {
+      "severity": "High",
+      "affected": "<5.4",
+      "summary": "Legacy PyYAML versions are often associated with unsafe loading risks.",
+      "recommended": ">=5.4"
+    },
+    "jinja2": {
+      "severity": "Medium",
+      "affected": "<2.11.3",
+      "summary": "Old Jinja2 builds contain known template sandbox escapes.",
+      "recommended": ">=2.11.3"
+    },
+    "flask": {
+      "severity": "Medium",
+      "affected": "<2.2",
+      "summary": "Outdated Flask may miss important security patches.",
+      "recommended": ">=2.2"
+    },
+    "requests": {
+      "severity": "Low",
+      "affected": "<2.20",
+      "summary": "Very old requests versions have known vulnerabilities.",
+      "recommended": ">=2.20"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+[project]
+name = "demo-vulnerable"
+version = "0.1.0"
+dependencies = [
+    "jinja2==2.10",
+    "sqlalchemy>=1.4"
+]

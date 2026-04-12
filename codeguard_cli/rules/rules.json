@@ -1,0 +1,231 @@
+{
+  "rules": [
+    {
+      "id": "SEC-AWS-001",
+      "name": "AWS Access Key Detected",
+      "description": "Potential hardcoded AWS access key detected.",
+      "category": "Secrets",
+      "severity": "High",
+      "confidence": 0.9,
+      "detection": "regex",
+      "pattern": "\\bAKIA[0-9A-Z]{16}\\b",
+      "remediation": "Move credentials to environment variables or a secret manager.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "SEC-PRIVATE-KEY-001",
+      "name": "Private Key Material",
+      "description": "Private key header found in source files.",
+      "category": "Secrets",
+      "severity": "Critical",
+      "confidence": 0.98,
+      "detection": "regex",
+      "pattern": "-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+      "remediation": "Remove keys from source control and rotate immediately.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "SEC-JWT-001",
+      "name": "JWT-like Token",
+      "description": "JWT-like token string found in code.",
+      "category": "Secrets",
+      "severity": "High",
+      "confidence": 0.85,
+      "detection": "regex",
+      "pattern": "\\beyJ[a-zA-Z0-9_-]{10,}\\.[a-zA-Z0-9_-]{10,}\\.[a-zA-Z0-9_-]{10,}\\b",
+      "remediation": "Avoid hardcoding tokens in code and rotate compromised tokens.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "SEC-PASSWORD-001",
+      "name": "Hardcoded Password Assignment",
+      "description": "Password-like variable assigned directly in code.",
+      "category": "Secrets",
+      "severity": "High",
+      "confidence": 0.82,
+      "detection": "regex",
+      "pattern": "(?i)\\b(pass(word)?|pwd|db_pass|secret)\\s*[:=]\\s*['\"][^'\"]{4,}['\"]",
+      "remediation": "Store credentials outside source code and inject at runtime.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "SEC-TOKEN-001",
+      "name": "API Token Assignment",
+      "description": "Token-like variable assigned to a static value.",
+      "category": "Secrets",
+      "severity": "High",
+      "confidence": 0.8,
+      "detection": "regex",
+      "pattern": "(?i)\\b(api[_-]?key|token|access[_-]?token)\\s*[:=]\\s*['\"][A-Za-z0-9_\\-]{12,}['\"]",
+      "remediation": "Use environment variables and rotate exposed tokens.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "SEC-DB-CONN-001",
+      "name": "Database Connection String",
+      "description": "Hardcoded database connection URI found.",
+      "category": "Secrets",
+      "severity": "Medium",
+      "confidence": 0.78,
+      "detection": "regex",
+      "pattern": "\\b(postgres|mysql|mongodb|redis)(\\+\\w+)?://[^\\s'\"]+",
+      "remediation": "Move database URLs to secure configuration storage.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "SEC-EMAIL-CRED-001",
+      "name": "Email Credential Exposure",
+      "description": "SMTP credentials appear hardcoded.",
+      "category": "Secrets",
+      "severity": "Medium",
+      "confidence": 0.75,
+      "detection": "regex",
+      "pattern": "(?i)(smtp(_|)pass(word)?|email(_|)pass(word)?)\\s*[:=]\\s*['\"][^'\"]+['\"]",
+      "remediation": "Store email credentials in secret storage.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "PY-EVAL-001",
+      "name": "Use of eval()",
+      "description": "Dynamic code execution through eval().",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "eval_call",
+      "remediation": "Replace eval with safe parsing or explicit mapping.",
+      "cwe": "CWE-95"
+    },
+    {
+      "id": "PY-EXEC-001",
+      "name": "Use of exec()",
+      "description": "Dynamic code execution through exec().",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "exec_call",
+      "remediation": "Avoid exec or isolate execution with strict validation.",
+      "cwe": "CWE-95"
+    },
+    {
+      "id": "PY-OS-SYSTEM-001",
+      "name": "Use of os.system()",
+      "description": "Shell command execution through os.system().",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "os_system",
+      "remediation": "Use subprocess with argument lists and no shell invocation.",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "PY-SUBPROCESS-SHELL-001",
+      "name": "subprocess with shell=True",
+      "description": "subprocess call enables shell execution.",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "subprocess_shell_true",
+      "remediation": "Use shell=False and pass explicit argument arrays.",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "PY-PICKLE-LOADS-001",
+      "name": "pickle deserialization",
+      "description": "Potential unsafe deserialization using pickle.",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "pickle_load",
+      "remediation": "Avoid untrusted pickle data; use safe formats like JSON.",
+      "cwe": "CWE-502"
+    },
+    {
+      "id": "PY-YAML-UNSAFE-001",
+      "name": "Unsafe yaml.load",
+      "description": "yaml.load used without SafeLoader.",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "yaml_unsafe_load",
+      "remediation": "Use yaml.safe_load or specify SafeLoader explicitly.",
+      "cwe": "CWE-20"
+    },
+    {
+      "id": "PY-WEAK-HASH-001",
+      "name": "Weak Hash Function",
+      "description": "Use of md5/sha1 for security-sensitive hashing.",
+      "category": "Dangerous Patterns",
+      "severity": "Medium",
+      "detection": "ast",
+      "logic": "weak_hash",
+      "remediation": "Use SHA-256+ or dedicated password hash functions.",
+      "cwe": "CWE-327"
+    },
+    {
+      "id": "PY-HARDCODED-CREDS-001",
+      "name": "Hardcoded Credentials in Python",
+      "description": "Python assignment likely contains static credentials.",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "hardcoded_credentials",
+      "remediation": "Load credentials from secure runtime sources.",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "PY-BROAD-EXCEPT-001",
+      "name": "Broad Exception Handling",
+      "description": "Broad exception handler may hide security failures.",
+      "category": "Dangerous Patterns",
+      "severity": "Low",
+      "detection": "ast",
+      "logic": "broad_except",
+      "remediation": "Catch specific exception types and handle failures explicitly.",
+      "cwe": "CWE-396"
+    },
+    {
+      "id": "PY-CMD-INJECT-001",
+      "name": "Possible Command Injection",
+      "description": "Dynamic command construction detected in shell execution path.",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "possible_command_injection",
+      "remediation": "Sanitize inputs and avoid shell command interpolation.",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "PY-SQL-INJECT-001",
+      "name": "Possible SQL Injection",
+      "description": "SQL query appears built via string interpolation.",
+      "category": "Dangerous Patterns",
+      "severity": "High",
+      "detection": "ast",
+      "logic": "possible_sql_injection",
+      "remediation": "Use parameterized queries with bound parameters.",
+      "cwe": "CWE-89"
+    },
+    {
+      "id": "DEP-UNPINNED-001",
+      "name": "Unpinned Dependency",
+      "description": "Dependency does not use strict version pinning.",
+      "category": "Dependencies",
+      "severity": "Medium",
+      "detection": "dependency",
+      "logic": "unpinned_dependency",
+      "remediation": "Pin dependencies with exact versions to improve supply chain safety.",
+      "cwe": "CWE-1104"
+    },
+    {
+      "id": "DEP-RISKY-001",
+      "name": "Known Risky Dependency",
+      "description": "Dependency appears in local risk database with vulnerable range.",
+      "category": "Dependencies",
+      "severity": "High",
+      "detection": "dependency",
+      "logic": "local_risk_database",
+      "remediation": "Upgrade to a safe version and verify transitive dependencies.",
+      "cwe": "CWE-1104"
+    }
+  ]
+}
