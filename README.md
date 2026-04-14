@@ -13,6 +13,9 @@ It focuses on practical, interview-friendly static checks for Python-heavy codeb
 - Rule catalog with metadata, remediation advice, and CWE mapping
 - Terminal, JSON, and HTML reports
 - Severity filtering (`Low`, `Medium`, `High`, `Critical`)
+- CI mode with non-zero exit on risky findings (`--ci`)
+- `.codeguardignore` support for path and rule exclusions
+- Dashboard recent scan history and quick rerun of the last scan
 
 ## Installation
 
@@ -47,6 +50,7 @@ python main.py
 ```
 
 This opens an interactive dashboard menu where you can launch scans, list/show rules, and run demo scans without typing full subcommands.
+It also shows recent scans and includes options to rerun the latest scan.
 
 ### Basic scan
 
@@ -58,6 +62,18 @@ python main.py scan demo_samples
 
 ```bash
 python main.py scan demo_samples --json --html --output reports/codeguard_report
+```
+
+### CI mode (fail build on High/Critical findings by default)
+
+```bash
+python main.py scan demo_samples --ci
+```
+
+### CI mode with custom threshold
+
+```bash
+python main.py scan demo_samples --ci --ci-threshold medium
 ```
 
 ### Scan only Python and environment files
@@ -107,8 +123,27 @@ python main.py version
 - `--output <path>` output file or directory
 - `--severity <low|medium|high|critical>` minimum severity filter
 - `--extensions <comma-separated>` extension filter
+- `--ci` return non-zero exit code when findings meet threshold
+- `--ci-threshold <low|medium|high|critical>` severity threshold for CI mode
 - `--quiet` reduce output
 - `--verbose` debug logging
+
+## .codeguardignore
+
+Create a `.codeguardignore` file at the scan target root to suppress paths and rules.
+
+Example:
+
+```text
+# Ignore a file
+tests/fixtures/insecure_sample.py
+
+# Ignore an entire folder
+legacy/
+
+# Ignore a specific rule globally
+rule:PY-EVAL-001
+```
 
 ## Example Terminal Output
 

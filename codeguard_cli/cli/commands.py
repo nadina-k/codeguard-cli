@@ -18,6 +18,8 @@ from codeguard_cli.reporter.json_report import load_json_report, write_json_repo
 from codeguard_cli.reporter.terminal_report import render_terminal_report
 from codeguard_cli.rules import get_rule, list_rules, load_rules
 from codeguard_cli.scanner import scan_target
+from codeguard_cli.utils.helpers import is_severity_allowed
+from codeguard_cli.utils.history import append_scan_history, get_last_scan, list_scan_history
 from codeguard_cli.utils.logging_utils import configure_logging
 
 logger = logging.getLogger(__name__)
@@ -103,6 +105,8 @@ def _dashboard_menu() -> str:
         "[5] Show Rule Details",
         "[6] Version",
         "[7] Help",
+        "[8] Rerun Last Scan",
+        "[9] View Recent Scan History",
         "[0] Exit",
     ]
     return _boxed_block(menu_items, title="AVAILABLE TOOLS")
@@ -115,6 +119,17 @@ def _dashboard_info_panel() -> str:
         f"Current working directory: {cwd}",
         "Tip: start with option [3] to run an immediate demo scan.",
     ]
+    recent = list_scan_history(limit=2)
+    if recent:
+        info_lines.append("Recent scans:")
+        for item in recent:
+            summary = (
+                f"- {item.get('saved_at', '?')} | {item.get('target_path', '?')} | "
+                f"findings={item.get('findings', 0)}"
+            )
+            info_lines.append(summary)
+    else:
+        info_lines.append("Recent scans: none yet.")
     return _boxed_block(info_lines, title="HOME")
 
 
@@ -149,9 +164,43 @@ def _build_scan_args_from_prompt(path: str) -> argparse.Namespace:
         output=output or None,
         severity=severity,
         extensions=extensions or None,
+        ci=False,
+        ci_threshold="high",
         quiet=False,
         verbose=False,
     )
+
+
+def _build_scan_args_from_history(entry: dict) -> argparse.Namespace:
+    """Rehydrate scan arguments from a saved history entry."""
+    return argparse.Namespace(
+        path=entry.get("target_path", "."),
+        json=bool(entry.get("json", False)),
+        html=bool(entry.get("html", False)),
+        print_json=False,
+        output=entry.get("output") or None,
+        severity=str(entry.get("severity", "low")),
+        extensions=entry.get("extensions") or None,
+        ci=False,
+        ci_threshold="high",
+        quiet=False,
+        verbose=False,
+    )
+
+
+def _print_recent_history(limit: int = 10) -> None:
+    entries = list_scan_history(limit=limit)
+    if not entries:
+        print("No scan history available yet.")
+        return
+
+    lines = ["Recent Scan History:"]
+    for index, item in enumerate(entries, start=1):
+        lines.append(
+            f"{index:>2}. {item.get('saved_at', '?')} | target={item.get('target_path', '?')} | "
+            f"findings={item.get('findings', 0)} | severity>={item.get('severity', 'low')}"
+        )
+    print(_boxed_block(lines, title="SCAN HISTORY"))
 
 
 def _run_dashboard() -> int:
@@ -187,6 +236,17 @@ def _run_dashboard() -> int:
         elif choice == "7":
             parser = build_parser()
             parser.print_help()
+            _prompt("Press Enter to continue", "")
+        elif choice == "8":
+            last_scan = get_last_scan()
+            if not last_scan:
+                print("No previous scan available to rerun.")
+            else:
+                print(f"Rerunning last scan: {last_scan.get('target_path', '.')}")
+                _cmd_scan(_build_scan_args_from_history(last_scan))
+            _prompt("Press Enter to continue", "")
+        elif choice == "9":
+            _print_recent_history(limit=10)
             _prompt("Press Enter to continue", "")
         elif choice == "0":
             print("Exiting CodeGuard dashboard.")
@@ -261,6 +321,32 @@ def _cmd_scan(args: argparse.Namespace) -> int:
 
     if args.print_json:
         print(json.dumps(result.to_dict(), indent=2))
+
+    severity_counts = result.severity_counts()
+    append_scan_history(
+        {
+            "target_path": str(target),
+            "severity": str(args.severity),
+            "extensions": args.extensions or "",
+            "json": bool(args.json),
+            "html": bool(args.html),
+            "output": args.output or "",
+            "findings": len(result.findings),
+            "severity_counts": severity_counts,
+            "duration_seconds": round(result.duration_seconds, 3),
+        }
+    )
+
+    if getattr(args, "ci", False):
+        threshold = getattr(args, "ci_threshold", "high")
+        ci_failures = [finding for finding in result.findings if is_severity_allowed(finding.severity, threshold)]
+        if ci_failures:
+            print(
+                f"CI check failed: {len(ci_failures)} findings at or above {threshold} severity "
+                f"(threshold={threshold})."
+            )
+            return 1
+        print(f"CI check passed: no findings at or above {threshold} severity.")
 
     return 0
 
@@ -339,6 +425,13 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument(
         "--extensions",
         help="Comma-separated file extensions to scan (example: .py,.env,.yaml)",
+    )
+    scan_parser.add_argument("--ci", action="store_true", help="Return non-zero exit code on risky findings")
+    scan_parser.add_argument(
+        "--ci-threshold",
+        default="high",
+        choices=_severity_choices(),
+        help="Severity threshold used with --ci (default: high)",
     )
     scan_parser.set_defaults(func=_cmd_scan)
 

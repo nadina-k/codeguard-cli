@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -8,11 +9,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["CODEGUARD_HISTORY_FILE"] = str(ROOT / ".test_history.json")
     return subprocess.run(
         [sys.executable, str(ROOT / "main.py"), *args],
         text=True,
         capture_output=True,
         cwd=ROOT,
+        env=env,
         check=False,
     )
 
@@ -76,3 +80,14 @@ def test_report_command_from_json(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert "CodeGuard CLI Scan Report" in result.stdout
+
+
+def test_scan_ci_mode_fails_on_high_findings(tmp_path: Path) -> None:
+    sample_dir = tmp_path / "sample"
+    sample_dir.mkdir()
+    (sample_dir / "app.py").write_text('password = "secret123"\nprint(eval("1+1"))\n', encoding="utf-8")
+
+    result = run_cli("scan", str(sample_dir), "--ci")
+
+    assert result.returncode == 1
+    assert "CI check failed" in result.stdout

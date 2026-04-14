@@ -10,3 +10,4 @@ venv/
 .env
 *.log
 reports/
+.test_history.json

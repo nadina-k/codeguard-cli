@@ -10,6 +10,7 @@ from codeguard_cli.utils.helpers import is_severity_allowed, normalize_extension
 
 from .dependencies import scan_dependency_files
 from .file_walker import walk_files
+from .ignore_config import load_ignore_config
 from .patterns import scan_python_file
 from .secrets import scan_file_for_secrets
 
@@ -39,7 +40,13 @@ def scan_target(
     extension_filter = normalize_extensions(extensions)
     selected_extensions = extension_filter or DEFAULT_SCAN_EXTENSIONS
 
-    total_discovered, files_to_scan = walk_files(target_path, selected_extensions)
+    ignore_config = load_ignore_config(target_path)
+
+    total_discovered, files_to_scan = walk_files(
+        target_path,
+        selected_extensions,
+        ignore_matcher=ignore_config.should_ignore_path,
+    )
 
     findings = []
     for file_path in files_to_scan:
@@ -55,7 +62,13 @@ def scan_target(
 
     findings.extend(scan_dependency_files(target_path, rules))
 
-    filtered = [f for f in findings if is_severity_allowed(f.severity, severity)]
+    filtered = [
+        finding
+        for finding in findings
+        if not ignore_config.should_ignore_path(Path(finding.file_path), False)
+        and finding.rule_id not in ignore_config.rule_ids
+        and is_severity_allowed(finding.severity, severity)
+    ]
 
     duration = perf_counter() - start
     finished_at = utc_now_iso()
